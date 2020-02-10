@@ -1,0 +1,6 @@
+myenv/*
+*.lst
+*.rec
+*.idx
+example/*
+sock-images/*
