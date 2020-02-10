@@ -4,3 +4,4 @@ myenv/*
 *.idx
 example/*
 sock-images/*
+im2rec.py
