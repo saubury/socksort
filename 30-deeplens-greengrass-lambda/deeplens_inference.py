@@ -21,6 +21,9 @@ import cv2
 import urllib
 import zipfile
 import mo
+import mqttconfig
+import paho.mqtt.client as mqtt
+
 
 # Create a greengrass core sdk client
 client = greengrasssdk.client('iot-data')
@@ -30,6 +33,14 @@ client = greengrasssdk.client('iot-data')
 iot_topic = '$aws/things/{}/infer'.format(os.environ['AWS_IOT_THING_NAME'])
 
 client.publish(topic=iot_topic, payload='At start of lambda function')
+
+# external MQTT broker
+client2 = mqtt.Client()
+client2.username_pw_set(mqttconfig.mqtt_user, mqttconfig.mqtt_password)
+client2.connect(mqttconfig.mqtt_broker_url, mqttconfig.mqtt_broker_port)
+
+# Send to MQTT
+client2.publish(topic=mqttconfig.mqtt_topic, payload='Hello from deeplens', qos=0, retain=False)
 
 class LocalDisplay(Thread):
     # Class for facilitating the local display of inference results
@@ -138,24 +149,20 @@ def greengrass_infinite_infer_run():
             # Output inference result to the fifo file so it can be viewed with mplayer
             parsed_results = model.parseResult(model_type, inferOutput)
             top_k = parsed_results[model_type][0:topk]
-            msg = '{'
-            prob_num = 0 
-            for obj in top_k:
-                if prob_num == topk-1: 
-                    msg += '"{}": {:.2f}'.format(labels[obj["label"]], obj["prob"]*100)
-                else:
-                    msg += '"{}": {:.2f},'.format(labels[obj["label"]], obj["prob"]*100)
-            prob_num += 1
-            msg += "}"  
             
-            client.publish(topic=iot_topic, payload = msg)
             sock_label = labels[top_k[0]["label"]]
             sock_prob = top_k[0]["prob"]*100
-            msg_screen = '{} : {:.0f} %'.format(sock_label, sock_prob)
             
-            
+            # Write to MQTT
+            json_payload = {"image" : sock_label, "probability" : sock_prob}
+            client.publish(topic=iot_topic, payload=json.dumps(json_payload))
+            client2.publish(topic=mqttconfig.mqtt_topic, payload=json.dumps(json_payload), qos=0, retain=False)
+
+            # Write to image buffer;  screen display
+            msg_screen = '{} {:.0f}%'.format(sock_label, sock_prob)
             cv2.putText(frame, msg_screen, (20,200), cv2.FONT_HERSHEY_SIMPLEX, 5, (0, 0, 255), 12)
             local_display.set_frame_data(frame)            
+            
     except Exception as ex:
         client.publish(topic=iot_topic, payload='Error in object detection lambda: {}'.format(ex))
 
