@@ -1,0 +1,5 @@
+*.swp
+confluentinc-kafka-connect-mqtt/*
+TEMPNOTES.md
+secrets.txt
+temp-notes.md

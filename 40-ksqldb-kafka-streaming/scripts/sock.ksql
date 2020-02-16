@@ -1,0 +1,49 @@
+CREATE STREAM sock_stream(image varchar,probability double) WITH (KAFKA_TOPIC='data_mqtt',  VALUE_FORMAT='JSON');
+
+select TIMESTAMPTOSTRING(rowtime, 'dd/MMM HH:mm:ss') as createtime, image, probability from sock_stream emit changes;
+
+SET 'auto.offset.reset' = 'latest';
+
+
+create table sock_stream_smoothed as
+select image
+, TIMESTAMPTOSTRING(WindowStart(), 'HH:mm:ss') as last_seen
+, WindowStart() as window_start
+from sock_stream
+window tumbling (size 5 seconds)
+where image != 'Blank'
+group by image having count(*) > 3
+emit changes;
+
+
+
+
+select image, count(*) 
+from sock_stream
+window tumbling (size 5 seconds) 
+where name != 'blank'
+group by image emit changes;  
+
+
+create stream sock_stream_smoothed
+select image, TIMESTAMPTOSTRING(WindowStart(), 'HH:mm:ss') as last_seen
+from sock_stream
+window tumbling (size 5 seconds)
+where image != 'Blank'
+group by image having count(*) > 3 
+emit changes;
+
+select image
+, count(*)
+, case when (count(*)/2)*2 = count(*) then 'Pair' else 'un-matched' end  
+from sock_stream_smoothed 
+group by image 
+emit changes;
+
+
+select image
+from sock_stream
+window SESSION (size 5 seconds)
+where image != 'Blank'
+group by image 
+emit changes;
