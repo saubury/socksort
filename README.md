@@ -8,6 +8,9 @@ Sort socks into pairs using deep learning image classification and Kafka stream 
 
 
 ## Image Preparation
+
+![Image prep](docs/01-image-prep.png)
+
 Prepare a dataset of sock images in ImageRecord format.  Further references [here](https://gluon-cv.mxnet.io/build/examples_datasets/recordio.html) and [here](https://arthurcaillau.com/image-record-iter/)
 
 First, we need to generate a `.lst` file, i.e. a list of these images containing label and filename information.
@@ -70,6 +73,9 @@ It gives you four more files: (`sock-images_rec_train.idx`, `sock-images_rec_tra
 
 
 # Model Training
+
+![Image prep](docs/02-train.png)
+
 Now we want to train an image classification model that can classify sock images.  We will use transfer learning mode using AWS Sagemaker.  We can launch a Sagemaker notebook for image classification algorithm in transfer learning mode to fine-tune a pre-trained model (trained on sock images data) to learn to classify a new dataset.  A more extensive explanation  [here](https://github.com/awslabs/amazon-sagemaker-examples/blob/master/introduction_to_amazon_algorithms/imageclassification_caltech/Image-classification-transfer-learning-highlevel.ipynb)
 
 The steps here are 
@@ -91,6 +97,10 @@ All going well you should have a model file
 
 
 # Deeplens Lambda Function
+
+![Image prep](docs/03-deploy.png)
+
+
 Now to the the Deeplens Greengrass Lambda Function.  That is, we need to build, publish and deploy the Sock Sort AWS DeepLens Inference Lambda Function
 
 Steps to build `sock_deeplens_inference_function.zip`
@@ -105,6 +115,7 @@ unzip deeplens_inference_function_template.zip
 rm deeplens_inference_function_template.zip
 cp ../deeplens_inference.py	.
 cp ../sock_labels.txt .
+cp ../mqttconfig.py . # optional
 zip -r9 ${OLDPWD}/sock_deeplens_inference_function.zip .
 cd ..
 ls  sock_deeplens_inference_function.zip
@@ -115,4 +126,8 @@ To transfer the object classification model in SageMaker and import it to DeepLe
 
 ## Publish Sock Sort AWS DeepLens Inference Lambda Function
 See [here](https://docs.aws.amazon.com/deeplens/latest/dg/deeplens-inference-lambda-create.html) for a step by step guide 
+
+# Testing
+
+![Image prep](docs/04-run.png)
 
