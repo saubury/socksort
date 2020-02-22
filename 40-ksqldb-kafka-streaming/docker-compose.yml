@@ -84,7 +84,7 @@ services:
       KSQL_CONFLUENT_SUPPORT_METRICS_ENABLE: "false"
     volumes:
       - ./scripts:/scripts
-      - ./ext:/etc/ksql/ext
+      # - ./ext:/etc/ksql/ext
 
   ksql-cli:
     image: confluentinc/cp-ksql-cli:${CONF_VER}
