@@ -131,3 +131,8 @@ See [here](https://docs.aws.amazon.com/deeplens/latest/dg/deeplens-inference-lam
 
 ![Image prep](docs/04-run.png)
 
+# Sock Stream Sorting using ksqlDB and Kafka
+
+## Load MQTT into Kafka using Kafka Connect
+
+
