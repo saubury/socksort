@@ -131,8 +131,97 @@ See [here](https://docs.aws.amazon.com/deeplens/latest/dg/deeplens-inference-lam
 
 ![Image prep](docs/04-run.png)
 
+Open a browser and navigate to `https://<local-ip-address-of-deep-lens>:4000/`
+
+
+![Image prep](docs/05-browser.png)
+
+
 # Sock Stream Sorting using ksqlDB and Kafka
 
+
 ## Load MQTT into Kafka using Kafka Connect
+
+
+# ksqlDB Stream Processing
+
+## Kafka Connect MQTT Source into Kafka
+Our next task is to stream the sock identification messages from MQTT into Kafka
+
+```
+docker-compose up -d
+```
+
+
+## TEST MQTT
+```
+mosquitto_sub -h ${MQTT_HOST} -p ${MQTT_PORT} -u ${MQTT_USER} -P ${MQTT_PASS} -t sockfound
+```
+
+```
+{"image": "Blank", "probability": 37.59765625}
+{"image": "Blank", "probability": 41.162109375}
+{"image": "Google", "probability": 97.314453125}
+{"image": "Google", "probability": 94.970703125}
+{"image": "Google", "probability": 64.6484375}
+{"image": "Blank", "probability": 67.3828125}
+{"image": "Blank", "probability": 50.634765625}
+{"image": "Running Science", "probability": 33.69140625}
+{"image": "Running Science", "probability": 51.806640625}
+```
+
+
+## Connect
+List available plugs - ensure MQTT is visible 
+```
+curl -s -X GET http://localhost:8083/connector-plugins | jq '.'
+```
+
+Amongst other drivers you'll want to see
+```
+  . . . 
+    "class": "io.confluent.connect.mqtt.MqttSourceConnector",
+    "type": "source",
+    "version": "0.0.0.0"
+  . . . 
+```  
+
+## ksqlDB CLI
+```
+docker-compose exec ksql-cli ksql http://ksql-server:8088
+```
+
+
+## Kafka Connect via ksqlDB
+
+```
+CREATE SOURCE CONNECTOR `mqtt-source` WITH(
+    "connector.class"='io.confluent.connect.mqtt.MqttSourceConnector',
+    "mqtt.server.uri"='${file:/scripts/credentials.properties:MQTT_URI}',
+    "mqtt.username"='${file:/scripts/credentials.properties:MQTT_USERNAME}',
+    "mqtt.password"='${file:/scripts/credentials.properties:MQTT_PASSWORD}',
+    "mqtt.topics"='sockfound',
+    "kafka.topic"='data_mqtt',
+    "key.converter"='org.apache.kafka.connect.storage.StringConverter',
+    "value.converter"='org.apache.kafka.connect.converters.ByteArrayConverter',
+    "tasks.max"='1',
+    "confluent.topic.bootstrap.servers"='kafka:29092',
+    "confluent.topic.replication.factor"='1'
+);
+```
+
+## Kafka
+Check incoming records
+```
+kafka-console-consumer --bootstrap-server localhost:9092 --topic data_mqtt --from-beginning
+```
+
+All going well you'll see payloads like this
+```
+{"image": "Running Science", "probability": 43.994140625}
+{"image": "Mongo", "probability": 50.29296875}
+{"image": "Mongo", "probability": 86.279296875}
+{"image": "Mongo", "probability": 53.076171875}
+```
 
 
