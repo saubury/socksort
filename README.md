@@ -225,3 +225,10 @@ All going well you'll see payloads like this
 ```
 
 
+![Stream of Socks Found](docs/ksql-01.png)
+
+
+But in realatity
+
+![ksqlDB Stream of Messages](docs/ksql-02.png)
+
