@@ -1,49 +1,22 @@
-CREATE STREAM sock_stream(image varchar,probability double) WITH (KAFKA_TOPIC='data_mqtt',  VALUE_FORMAT='JSON');
+-- Creata stream for the MQTT topic
+create stream sock_stream(image varchar, probability double) 
+with (kafka_topic='data_mqtt',  value_format='json');
 
-select TIMESTAMPTOSTRING(rowtime, 'dd/MMM HH:mm:ss') as createtime, image, probability from sock_stream emit changes;
-
-SET 'auto.offset.reset' = 'latest';
-
-
+-- Bucket sock images into windows of 5 seconds
 create table sock_stream_smoothed as
 select image
-, TIMESTAMPTOSTRING(WindowStart(), 'HH:mm:ss') as last_seen
-, WindowStart() as window_start
+, timestamptostring(windowstart(), 'hh:mm:ss') as last_seen
+, windowstart() as window_start
 from sock_stream
 window tumbling (size 5 seconds)
-where image != 'Blank'
+where image != 'blank'
 group by image having count(*) > 3
 emit changes;
 
-
-
-
-select image, count(*) 
-from sock_stream
-window tumbling (size 5 seconds) 
-where name != 'blank'
-group by image emit changes;  
-
-
-create stream sock_stream_smoothed
-select image, TIMESTAMPTOSTRING(WindowStart(), 'HH:mm:ss') as last_seen
-from sock_stream
-window tumbling (size 5 seconds)
-where image != 'Blank'
-group by image having count(*) > 3 
-emit changes;
-
+-- Find pairs of socks (socks appearing in even numbers)
 select image
-, count(*)
-, case when (count(*)/2)*2 = count(*) then 'Pair' else 'un-matched' end  
+, case when (count(*)/2)*2 = count(*) then 'Pair' else 'Un-matched' end  as pair_seen
+, count(*) as number_socks_seen
 from sock_stream_smoothed 
-group by image 
-emit changes;
-
-
-select image
-from sock_stream
-window SESSION (size 5 seconds)
-where image != 'Blank'
 group by image 
 emit changes;

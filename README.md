@@ -232,3 +232,27 @@ But in realatity
 
 ![ksqlDB Stream of Messages](docs/ksql-02.png)
 
+```
+-- Creata stream for the MQTT topic
+create stream sock_stream(image varchar, probability double) 
+with (kafka_topic='data_mqtt',  value_format='json');
+
+-- Bucket sock images into windows of 5 seconds
+create table sock_stream_smoothed as
+select image
+, timestamptostring(windowstart(), 'hh:mm:ss') as last_seen
+, windowstart() as window_start
+from sock_stream
+window tumbling (size 5 seconds)
+where image != 'blank'
+group by image having count(*) > 3
+emit changes;
+
+-- Find pairs of socks (socks appearing in even numbers)
+select image
+, case when (count(*)/2)*2 = count(*) then 'Pair' else 'Un-matched' end  as pair_seen
+, count(*) as number_socks_seen
+from sock_stream_smoothed 
+group by image 
+emit changes;
+```
