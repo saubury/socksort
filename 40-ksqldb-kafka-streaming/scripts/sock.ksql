@@ -1,4 +1,22 @@
--- Creata stream for the MQTT topic
+-- Create MQTT source connector
+CREATE SOURCE CONNECTOR `mqtt-source` WITH(
+    "connector.class"='io.confluent.connect.mqtt.MqttSourceConnector',
+    "mqtt.server.uri"='${file:/scripts/credentials.properties:MQTT_URI}',
+    "mqtt.username"='${file:/scripts/credentials.properties:MQTT_USERNAME}',
+    "mqtt.password"='${file:/scripts/credentials.properties:MQTT_PASSWORD}',
+    "mqtt.topics"='sockfound',
+    "kafka.topic"='data_mqtt',
+    "key.converter"='org.apache.kafka.connect.storage.StringConverter',
+    "value.converter"='org.apache.kafka.connect.converters.ByteArrayConverter',
+    "tasks.max"='1',
+    "confluent.topic.bootstrap.servers"='kafka:29092',
+    "confluent.topic.replication.factor"='1'
+);
+
+--
+SET 'auto.offset.reset'='latest';
+
+-- Create a stream for the MQTT topic
 create stream sock_stream(image varchar, probability double) 
 with (kafka_topic='data_mqtt',  value_format='json');
 
@@ -9,7 +27,7 @@ select image
 , windowstart() as window_start
 from sock_stream
 window tumbling (size 5 seconds)
-where image != 'blank'
+where image != 'Blank'
 group by image having count(*) > 3
 emit changes;
 
