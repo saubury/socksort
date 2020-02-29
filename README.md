@@ -16,12 +16,12 @@ Prepare a dataset of sock images in ImageRecord format.  Further references [her
 First, we need to generate a `.lst` file, i.e. a list of these images containing label and filename information.
 
 
-```
+```console
 cd 10-image-preparation
 ```
 
 Setup Python and download im2rec.py
-```
+```console
 python3 -m venv myenv
 source myenv/bin/activate
 pip install mxnet opencv-python
@@ -30,12 +30,12 @@ curl --output im2rec.py https://raw.githubusercontent.com/apache/incubator-mxnet
 
 
 Remove any existing files
-```
+```console
 rm -f *.lst *.rec *.idx
 ```
 
 Create dataset of sock images in ImageRecord format
-```
+```console
 python im2rec.py --list  --train-ratio 0.8   --recursive ./sock-images_rec sock-images/
 ```
 
@@ -51,7 +51,7 @@ class-streamset 5
 
 After the execution, you find files `sock-images_rec_train.lst` and `sock-images_rec_val.lst` generated. 
 
-```
+```console
 wc -l *.lst
 544 sock-images_rec_train.lst
 137 sock-images_rec_val.lst
@@ -60,14 +60,14 @@ wc -l *.lst
 
 With this file, the next step is:
 
-```
+```console
 python im2rec.py   --resize 512   --center-crop   --num-thread 4 ./sock-images_rec ./sock-images/
 ```
 
 
 It gives you four more files: (`sock-images_rec_train.idx`, `sock-images_rec_train.rec`, `sock-images_rec_val.idx`, `sock-images_rec_val.rec`). Now, you can use them to train!
 
-```
+```console
  aws s3 cp . s3://deeplens-sagemaker-socksort --exclude "*" --include "*.idx"  --include "*.rec"  --include "*.lst" --recursive
 ```
 
@@ -105,7 +105,7 @@ Now to the the Deeplens Greengrass Lambda Function.  That is, we need to build, 
 
 Steps to build `sock_deeplens_inference_function.zip`
 
-```
+```console
 cd 30-deeplens-greengrass-lambda
 mkdir package_deeplens_inference_function
 pip install --target ./package_deeplens_inference_function paho-mqtt
@@ -148,7 +148,7 @@ Open a browser and navigate to `https://<local-ip-address-of-deep-lens>:4000/`
 ## Kafka Connect MQTT Source into Kafka
 Our next task is to stream the sock identification messages from MQTT into Kafka
 
-```
+```console
 docker-compose up -d
 ```
 
@@ -173,7 +173,7 @@ mosquitto_sub -h ${MQTT_HOST} -p ${MQTT_PORT} -u ${MQTT_USER} -P ${MQTT_PASS} -t
 
 ## Connect
 List available plugs - ensure MQTT is visible 
-```
+```console
 curl -s -X GET http://localhost:8083/connector-plugins | jq '.'
 ```
 
@@ -187,14 +187,14 @@ Amongst other drivers you'll want to see
 ```  
 
 ## ksqlDB CLI
-```
+```console
 docker-compose exec ksql-cli ksql http://ksql-server:8088
 ```
 
 
 ## Kafka Connect via ksqlDB
 
-```
+```console
 CREATE SOURCE CONNECTOR `mqtt-source` WITH(
     "connector.class"='io.confluent.connect.mqtt.MqttSourceConnector',
     "mqtt.server.uri"='${file:/scripts/credentials.properties:MQTT_URI}',
@@ -212,7 +212,7 @@ CREATE SOURCE CONNECTOR `mqtt-source` WITH(
 
 ## Kafka
 Check incoming records
-```
+```console
 kafka-console-consumer --bootstrap-server localhost:9092 --topic data_mqtt --from-beginning
 ```
 
@@ -232,7 +232,7 @@ But in realatity
 
 ![ksqlDB Stream of Messages](docs/ksql-02.png)
 
-```
+```console
 -- Creata stream for the MQTT topic
 create stream sock_stream(image varchar, probability double) 
 with (kafka_topic='data_mqtt',  value_format='json');
